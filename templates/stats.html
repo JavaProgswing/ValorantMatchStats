@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Stats</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Valorant Match Stats</h1>
+    </header>
+    <main>
+        <section>
+            <h2>Welcome, {{ username }}</h2>
+            <p>Your recent matches:</p>
+            {% if matches and matches|length > 0 %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Match ID</th>
+                            <th>Summary</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for match in matches %}
+                        <tr>
+                            <td>{{ match.id }}</td>
+                            <td>{{ match }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No matches found!</p>
+            {% endif %}
+        </section>
+        
+        <form action="/logout" method="get">
+            <button type="submit">Logout</button>
+        </form>
+        
+    </main>
+    <footer>
+        <p>&copy; 2025 Valorant Tracker</p>
+    </footer>
+</body>
+</html>

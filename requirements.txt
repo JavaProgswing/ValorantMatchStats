@@ -1,0 +1,5 @@
+Quart == 0.19.4
+python-dotenv
+aiohttp
+asyncpg
+requests
