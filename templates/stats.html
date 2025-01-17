@@ -15,22 +15,29 @@
             <h2>Welcome, {{ username }}</h2>
             <p>Your recent matches:</p>
             {% if matches and matches|length > 0 %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Match ID</th>
-                            <th>Summary</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for match in matches %}
-                        <tr>
-                            <td>{{ match.id }}</td>
-                            <td>{{ match }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <div class="cards-container">
+                    {% for match in matches %}
+                        <div class="card" style="background-image: url('{{ match.thumbnail }}')" onclick="toggleDetails(this)">
+                            <div class="card-overlay">
+                                <h3>{{ match.mode }}</h3>
+                                <p class="stats-summary">
+                                    {{ match.winningteam }} <br>
+                                    K/D: {{ match.player.stats.kills }}/{{ match.player.stats.deaths }} <br>
+                                    HS%: {{ match.hs_percentage }}% <br>
+                                    Leaderboard: {{ match.position }}
+                                </p>
+                            </div>
+                            <div class="card-details">
+                                <p class="stats-expanded">
+                                    Rounds Played: {{ len(match.rounds.roundlist) }} <br>
+                                    Score: {{ match.score }} <br>
+                                    MVPs: {{ match.mvps }} <br>
+                                    Abilities Cast: {{ match.abilities_cast }}
+                                </p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
             {% else %}
                 <p>No matches found!</p>
             {% endif %}
@@ -39,10 +46,15 @@
         <form action="/logout" method="get">
             <button type="submit">Logout</button>
         </form>
-        
     </main>
     <footer>
         <p>&copy; 2025 Valorant Tracker</p>
     </footer>
+    <script>
+        function toggleDetails(card) {
+            const details = card.querySelector('.card-details');
+            details.classList.toggle('active');
+        }
+    </script>
 </body>
 </html>
