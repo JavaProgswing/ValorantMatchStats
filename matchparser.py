@@ -1,42 +1,4 @@
 from datetime import datetime
-
-
-class Agent:
-    def __init__(self, name):
-        self.name = name
-        self.abilities = []
-
-    def __str__(self):
-        return self.name + " with abilities " + str(self.abilities)
-
-    def __repr__(self):
-        return self.name + " with abilities " + str(self.abilities)
-
-
-class Ability:
-    def __init__(self, name, cost):
-        self.name = name
-        self.cost = cost
-
-    def __str__(self):
-        return self.name + " with price $" + str(self.cost)
-
-    def __repr__(self):
-        return self.name + " with price $" + str(self.cost)
-
-
-class Weapon:
-    def __init__(self, name, cost):
-        self.name = name
-        self.cost = cost
-
-    def __str__(self):
-        return self.name + " with price $" + str(self.cost)
-
-    def __repr__(self):
-        return self.name + " with price $" + str(self.cost)
-
-
 import requests
 from functools import lru_cache
 
@@ -56,721 +18,444 @@ class ValorantAPI:
             f"Failed to fetch data from {url}: {response.status_code} {response.text}"
         )
 
-    def get_armor_name(self, armorId):
-        return armorId
-
-    def get_weapon_name(self, weaponId):
-        datajson = self.fetch_data("weapons")
-        for i in datajson["data"]:
-            if i["uuid"] == weaponId:
-                return i["displayName"]
+    def get_armor(self, armor_id):
+        json_data = self.fetch_data("gear")
+        for i in json_data["data"]:
+            if i["uuid"] == armor_id:
+                return Armor(i)
         return None
 
-    def get_card_icon(self, cardId):
-        datajson = self.fetch_data("playercards")
-        for i in datajson["data"]:
-            if i["uuid"] == cardId:
-                return i["displayIcon"]
+    def get_weapon(self, weapon_id):
+        json_data = self.fetch_data("weapons")
+        for i in json_data["data"]:
+            if i["uuid"] == weapon_id:
+                return Weapon(i)
         return None
 
-    def get_formatted_queue_name(self, queueId):
-        validQueueNames = {
+    def get_card(self, card_id):
+        json_data = self.fetch_data("playercards")
+        for i in json_data["data"]:
+            if i["uuid"] == card_id:
+                return Card(i)
+        return None
+
+    def get_title(self, title_id):
+        json_data = self.fetch_data("playertitles")
+        for i in json_data["data"]:
+            if i["uuid"] == title_id:
+                return Title(i)
+        return None
+
+    def get_formatted_team_name(self, team_id):
+        team_names = {
+            "Red": "Attackers",
+            "Blue": "Defenders",
+            "FreeForAll": "Free For All",
+        }
+        return team_names.get(team_id, "Unknown")
+
+    def get_formatted_queue_name(self, queue_id):
+        queue_names = {
+            "unrated": "Unrated",
             "competitive": "Competitive",
-            "custom": "Custom",
-            "": "Custom",
+            "spikerush": "Spike Rush",
             "deathmatch": "Deathmatch",
             "ggteam": "Escalation",
-            "newmap": "Pearl",
             "onefa": "Replication",
             "snowball": "Snowball Fight",
-            "spikerush": "SpikeRush",
-            "unrated": "Unrated",
             "swiftplay": "Swift Play",
+            "hurm": "Team Deathmatch",
+            "": "Custom",
         }
-        return validQueueNames.get(queueId, "Unknown")
+        return queue_names.get(queue_id, "Unknown")
 
-    def get_map_name_from_url(self, mapurl):
-        datajson = self.fetch_data("maps")
-        for i in datajson["data"]:
-            if mapurl == i["mapUrl"]:
-                return i["displayName"]
+    def get_map(self, map_url):
+        json_data = self.fetch_data("maps")
+        for i in json_data["data"]:
+            if map_url == i["mapUrl"]:
+                return Map(i)
         return None
 
-    def get_map_thumbnail(self, mapname):
-        datajson = self.fetch_data("maps")
-        for i in datajson["data"]:
-            if mapname == i["displayName"]:
-                return i["splash"]
+    def get_agent(self, agent_id):
+        json_data = self.fetch_data("agents?isPlayableCharacter=true")
+        for i in json_data["data"]:
+            if i["uuid"] == agent_id:
+                return Agent(i)
         return None
 
-    def get_agent_from_id(self, agentId):
-        datajson = self.fetch_data("agents")
-        for i in datajson["data"]:
-            if i["uuid"] == agentId:
-                return i["displayName"]
-        return None
 
-    def get_agent_abilities(self, agentname):
-        datajson = self.fetch_data("agents")
-        for i in datajson["data"]:
-            if agentname == i["displayName"]:
-                abilities = i["abilities"]
-                return {a["slot"]: a["displayName"] for a in abilities}
-        return None
+class Agent:
+    def __init__(self, json_data):
+        self.id = json_data["uuid"]
+        self.name = json_data["displayName"]
+        self.icon = json_data["displayIcon"]
 
-    def get_weapon_prices(self):
-        datajson = self.fetch_data("weapons")
-        weapons = []
-        for i in datajson["data"]:
-            if i["displayName"] != "Melee" and i["shopData"]["cost"] > 0:
-                weapons.append(
-                    {"name": i["displayName"], "cost": i["shopData"]["cost"]}
-                )
-        return weapons
+        self.role = json_data["role"]["displayName"]
+        self.description = json_data["description"]
+        self.abilities = self.Abilities(json_data["abilities"])
 
-    def get_weapon_price(self, weaponname):
-        datajson = self.fetch_data("weapons")
-        for i in datajson["data"]:
-            if i["displayName"] == weaponname:
-                return {"name": i["displayName"], "cost": i["shopData"]["cost"]}
-        return None
+    class Abilities:
+        def __init__(self, json_data):
+            self.abilities = [self.Ability(ability_data) for ability_data in json_data]
 
-    def get_possible_weapons(self, pricelimit):
-        weapons = self.get_weapon_prices()
-        return [w for w in weapons if w["cost"] <= pricelimit]
+        def __iter__(self):
+            return iter(self.abilities)
+
+        def __len__(self):
+            return len(self.abilities)
+
+        def __getitem__(self, index):
+            return self.abilities[index]
+
+        class Ability:
+            def __init__(self, json_data):
+                self.slot = json_data["slot"]
+                self.name = json_data["displayName"]
+                self.description = json_data["description"]
+                self.icon = json_data["displayIcon"]
 
 
-class Matches:
-    def __init__(self):
-        self.matchlist = []
+class Map:
+    def __init__(self, json_data):
+        self.id = json_data["uuid"]
+        self.url = json_data["mapUrl"]
+        self.name = json_data["displayName"]
+        self.splash = json_data["splash"]
+        self.icon = json_data["displayIcon"]
 
-    def add_match(self, match):
-        self.matchlist.append(match)
+        self.tactical_description = json_data["tacticalDescription"]
+        self.coordinates = json_data["coordinates"]
 
-    def __str__(self):
-        matchnames = ""
-        for match in self.matchlist:
-            matchnames += match.__str__() + ","
-        return ".".join(matchnames.rsplit(",", 1))
+
+class Armor:
+    def __init__(self, json_data):
+        self.id = json_data["uuid"]
+        self.name = json_data["displayName"]
+        self.icon = json_data["displayIcon"]
+
+        self.cost = json_data["shopData"]["cost"]
+        self.damage_reduction = json_data["details"][1]["value"]
+
+
+class Weapon:
+    def __init__(self, json_data):
+        self.id = json_data["uuid"]
+        self.name = json_data["displayName"]
+        self.icon = json_data["displayIcon"]
+
+        self.cost = json_data["shopData"]["cost"]
+        self.category = json_data["shopData"]["category"]
+
+
+class Card:
+    def __init__(self, json_data):
+        self.id = json_data["uuid"]
+        self.name = json_data["displayName"]
+        self.icon = json_data["displayIcon"]
+
+        self.small_image = json_data["smallArt"]
+        self.wide_image = json_data["wideArt"]
+        self.large_image = json_data["largeArt"]
+
+
+class Title:
+    def __init__(self, json_data):
+        self.id = json_data["uuid"]
+        self.text = json_data["titleText"]
 
 
 class Match:
-    def __init__(self, mdict):
-        self.raw = mdict
-        mapName = ValorantAPI().get_map_name_from_url(mdict["matchInfo"]["mapId"])
-        self.name = mapName
-        self.thumbnail = ValorantAPI().get_map_thumbnail(self.name)
-        self.id = mdict["matchInfo"]["matchId"]
-        self.mode = ValorantAPI().get_formatted_queue_name(
-            mdict["matchInfo"]["queueId"]
-        )
-        self.start_raw = mdict["matchInfo"]["gameStartMillis"]
-        self.start = datetime.fromtimestamp(self.start_raw // 1000)
-        self.rounds = Rounds(mdict, self.name, self)
-        self.winningteam = FormatData().get_rounds_won(self.rounds.roundlist)
-        self.players = Players(mdict["players"])
+    def __init__(self, json_data):
+        self.id = json_data["matchInfo"]["matchId"]
 
-    def __str__(self):
-        return f"{self.mode} on {self.name} resulting in {FormatData().get_rounds_stats(self.rounds.roundlist)}."
+        self.map_url = json_data["matchInfo"]["mapId"]
+        self.map = ValorantAPI().get_map(self.map_url)
+
+        self.mode_raw = json_data["matchInfo"]["queueId"]
+        self.mode = ValorantAPI().get_formatted_queue_name(self.mode_raw)
+        self.is_ranked = json_data["matchInfo"]["isRanked"]
+
+        self.start_time_raw = json_data["matchInfo"]["gameStartMillis"]
+        self.start_time = datetime.fromtimestamp(self.start_time_raw // 1000)
+        self.end_time_raw = (
+            self.start_time_raw + json_data["matchInfo"]["gameLengthMillis"]
+        )
+        self.end_time = datetime.fromtimestamp(self.end_time_raw // 1000)
+
+        self.teams = Teams(json_data["teams"])
+        self.winner = None
+        for team in self.teams:
+            if team.won:
+                self.winner = team
+                break
+
+        self.players = Players(json_data["players"], self.teams)
+        self.rounds = Rounds(json_data["roundResults"], self.players, self.teams)
+
+
+class Teams:
+    def __init__(self, json_data):
+        self.teams = [Team(team_data) for team_data in json_data]
+
+    def get_team_by_id(self, team_id):
+        if team_id is None:
+            return None
+
+        for team in self.teams:
+            if team.id == team_id:
+                return team
+        return None
+
+    def __iter__(self):
+        return iter(self.teams)
+
+    def __len__(self):
+        return len(self.teams)
+
+    def __getitem__(self, index):
+        return self.teams[index]
+
+
+class Team:
+    def __init__(self, json_data):
+        self.id = json_data["teamId"]
+
+        self.name = ValorantAPI().get_formatted_team_name(self.id)
+        self.score = json_data["numPoints"]
+        self.won = json_data["won"]
 
 
 class Players:
-    def __init__(self, mdict):
-        self.playerlist = []
-        self.raw = mdict
-        for playerm in self.raw:
-            playerdata = Player(playerm)
-            self.playerlist.append(playerdata)
+    def __init__(self, json_data, teams: Teams):
+        self.players = [Player(player_data, teams) for player_data in json_data]
+        self.players.sort(key=lambda x: x.overall_stats.score, reverse=True)
 
-    def __str__(self):
-        playernames = ""
-        for player in self.playerlist:
-            playernames += player.display_name + f"({player.currenttier}),"
-        return ".".join(playernames.rsplit(",", 1))
+    def get_player_by_id(self, player_id):
+        if player_id is None:
+            return None
+
+        for player in self.players:
+            if player.id == player_id:
+                return player
+        return None
+
+    def __iter__(self):
+        return iter(self.players)
+
+    def __len__(self):
+        return len(self.players)
+
+    def __getitem__(self, index):
+        return self.players[index]
 
 
 class Player:
-    def __init__(self, mdict):
-        self.raw = mdict
-        self.id = mdict["puuid"]
-        self.name = mdict["gameName"]
-        self.tag = mdict["tagLine"]
+    def __init__(self, json_data, teams: Teams):
+        self.id = json_data["puuid"]
+        self.name = json_data["gameName"]
+        self.tag = json_data["tagLine"]
         self.display_name = f"{self.name}#{self.tag}"
-        self.currenttier = mdict["competitiveTier"]
-        self.character = self.Character(mdict)
-        self.team_id = mdict.get("team")
-        self.party_id = mdict.get("party_id")
-        self.playtime = self.MatchTime(mdict["stats"]["playtimeMillis"])
-        self.cardId = mdict["playerCard"]
-        self.icon = ValorantAPI().get_card_icon(self.cardId)
-        self.iconId = mdict["playerTitle"]
-        self.stats = self.Stats(mdict["stats"])
-        self.ability_stats = self.AbilityStats(mdict["stats"]["abilityCasts"])
 
-    class AbilityStats:
-        def __init__(self, mdict):
-            self.raw = mdict
-            try:
-                self.c_casts = mdict["grenadeCasts"]
-            except Exception as ex:
-                self.c_casts = 0
-            try:
-                self.q_casts = mdict["ability1Casts"]
-            except Exception as ex:
-                self.q_casts = 0
-            try:
-                self.e_casts = mdict["ability2Casts"]
-            except Exception as ex:
-                self.e_casts = 0
-            try:
-                self.ultimate_casts = mdict["ultimateCasts"]
-            except Exception as ex:
-                self.ultimate_casts = 0
-            try:
-                self.x_casts = mdict["ultimateCasts"]
-            except Exception as ex:
-                self.x_casts = 0
+        self.card_id = json_data["playerCard"]
+        self.card = ValorantAPI().get_card(self.card_id)
+        self.title_id = json_data["playerTitle"]
+        self.title = ValorantAPI().get_title(self.title_id)
+        self.level = json_data["accountLevel"]
+
+        self.party_id = json_data.get("partyId")
+        self.tier = json_data.get("competitiveTier")
+
+        self.is_observer = json_data.get("isObserver")
+        self.team_id = json_data.get("teamId")
+        self.team = teams.get_team_by_id(self.team_id)
+
+        self.character_id = json_data["characterId"]
+        self.character = ValorantAPI().get_agent(self.character_id)
+
+        self.overall_stats = self.Stats(json_data.get("stats", {}))
+        self.ability_stats = self.AbilityStats(
+            json_data.get("stats", {}).get("abilityCasts", {}), self.character
+        )
 
     class Stats:
-        def __init__(self, mdict):
-            self.raw = mdict
-            self.score = mdict["score"]
-            self.kills = mdict["kills"]
-            self.deaths = mdict["deaths"]
-            self.assists = mdict["assists"]
+        def __init__(self, json_data):
+            self.score = json_data.get("score", 0)
+            self.kills = json_data.get("kills", 0)
+            self.deaths = json_data.get("deaths", 0)
+            self.assists = json_data.get("assists", 0)
 
-    class Character:
-        def __init__(self, mdict):
-            self.raw = mdict
-            self.id = mdict["characterId"]
-            self.name = ValorantAPI().get_agent_from_id(self.id)
-            # self.icon = mdict["assets"]["agent"]["small"]
-            # self.full_icon = mdict["assets"]["agent"]["full"]
-            # self.kill_icon = mdict["assets"]["agent"]["killfeed"]
+        def __str__(self):
+            return (
+                f"Score: {self.score}, K/D/A: {self.kills}/{self.deaths}/{self.assists}"
+            )
 
-    class MatchTime:
-        def __init__(self, mdict):
-            self.raw = mdict
-            try:
-                self.minutes = mdict["minutes"]
-            except:
-                pass
-            try:
-                self.seconds = mdict["seconds"]
-            except:
-                pass
-            try:
-                self.milliseconds = mdict["milliseconds"]
-            except:
-                pass
+    class AbilityStats:
+        def __init__(self, json_data, character: Agent):
+            self.character = character
+            if json_data is None:
+                self.grenade_casts = 0
+                self.ability1_casts = 0
+                self.ability2_casts = 0
+                self.ultimate_casts = 0
+                return
+
+            self.grenade_casts = json_data.get("grenadeCasts", 0)
+            self.ability1_casts = json_data.get("ability1Casts", 0)
+            self.ability2_casts = json_data.get("ability2Casts", 0)
+            self.ultimate_casts = json_data.get("ultimateCasts", 0)
+
+        def __str__(self):
+            ability_summary = ""
+            for ability in self.character.abilities:
+                if ability.slot.lower() == "passive":
+                    continue
+
+                ability_summary += f"{ability.name}: {getattr(self, ability.slot.lower() + '_casts')} \n"
+            return ability_summary
 
 
 class Rounds:
-    def __init__(self, mdict, mapname=None, match=None):
-        self.roundlist = []
-        self.match = match
-        try:
-            self.mapname = mapname
-        except:
-            pass
-        self.raw = mdict
-        self.list = mdict["roundResults"]
-        for roundm in self.list:
-            rounddata = Round(roundm, mapname)
-            self.roundlist.append(rounddata)
+    def __init__(self, json_data, players: Players, teams: Teams):
+        self.rounds = [Round(round_data, players, teams) for round_data in json_data]
+
+    def __iter__(self):
+        return iter(self.rounds)
+
+    def __len__(self):
+        return len(self.rounds)
+
+    def __getitem__(self, index):
+        return self.rounds[index]
+
+
+class Coordinate:
+    def __init__(self, json_data):
+        self.x = json_data["x"]
+        self.y = json_data["y"]
+
+
+class PlayerStats:
+    def __init__(self, json_data, players: Players):
+        self.player_stats = [
+            self.PlayerStat(player_data, players) for player_data in json_data
+        ]
+
+    def get_player_by_id(self, player_id):
+        if player_id is None:
+            return None
+
+        for player in self.player_stats:
+            if player.id == player_id:
+                return player
+        return None
+
+    def __iter__(self):
+        return iter(self.player_stats)
+
+    def __len__(self):
+        return len(self.player_stats)
+
+    def __getitem__(self, index):
+        return self.player_stats[index]
+
+    class PlayerStat:
+        def __init__(self, json_data, players: Players):
+            self.id = json_data["puuid"]
+            self.player = players.get_player_by_id(self.id)
+            self.score = json_data["score"]
+
+            self.economy = self.Economy(json_data["economy"])
+
+            self.killed_players = self.KilledPlayers(json_data["kills"], players)
+            self.damaged_players = self.DamagedPlayers(json_data["damage"], players)
+
+        class Economy:
+            def __init__(self, json_data):
+                self.spent = json_data["spent"]
+                self.remaining = json_data["remaining"]
+
+                self.weapon_id = json_data["weapon"]
+                self.weapon = ValorantAPI().get_weapon(self.weapon_id)
+                self.armor_id = json_data["armor"]
+                self.armor = ValorantAPI().get_armor(self.armor_id)
+
+        class KilledPlayers:
+            def __init__(self, json_data, players: Players):
+                self.killed_players = [
+                    self.KilledPlayer(data, players) for data in json_data
+                ]
+
+            def __iter__(self):
+                return iter(self.killed_players)
+
+            def __len__(self):
+                return len(self.killed_players)
+
+            def __getitem__(self, index):
+                return self.killed_players[index]
+
+            class KilledPlayer:
+                def __init__(self, json_data, players: Players):
+                    self.victim_id = json_data["victim"]
+                    self.victim = players.get_player_by_id(self.victim_id)
+                    self.location = Coordinate(json_data["victimLocation"])
+
+                    self.assistants = [
+                        players.get_player_by_id(player_id)
+                        for player_id in json_data["assistants"]
+                    ]
+                    self.weapon_used_id = json_data["finishingDamage"]["damageItem"]
+                    self.weapon_used = ValorantAPI().get_weapon(self.weapon_used_id)
+
+        class DamagedPlayers:
+            def __init__(self, json_data, players: Players):
+                self.damaged_players = [
+                    self.DamagedPlayer(data, players) for data in json_data
+                ]
+                self.total_damage = sum(
+                    [player.damage for player in self.damaged_players]
+                )
+
+            def __iter__(self):
+                return iter(self.damaged_players)
+
+            def __len__(self):
+                return len(self.damaged_players)
+
+            def __getitem__(self, index):
+                return self.damaged_players[index]
+
+            class DamagedPlayer:
+                def __init__(self, json_data, players: Players):
+                    self.receiver_id = json_data["receiver"]
+                    self.receiver = players.get_player_by_id(self.receiver_id)
+
+                    self.damage = json_data["damage"]
+                    self.headshots = json_data["headshots"]
+                    self.bodyshots = json_data["bodyshots"]
+                    self.legshots = json_data["legshots"]
 
 
 class Round:
-    def __init__(self, mdict, mapname=None):
-        self.raw = mdict
-        self.winnerteam = self.WinnerTeam(mdict)
-        self.spike = self.SpikeInfo(mdict)
-        self.stats = self.RoundStats(mdict)
-        self.mapname = mapname
+    def __init__(self, json_data, players: Players, teams: Teams):
+        self.serial = json_data["roundNum"]
+        self.winner = teams.get_team_by_id(json_data["winningTeam"])
 
-    class RoundStats:
-        def __init__(self, mdict):
-            self.raw = mdict
-            self.playerlist = []
-            self.blueeco = 0
-            self.redeco = 0
-            for player in mdict["playerStats"]:
-                playerdata = self.RoundPlayer(player)
-                self.playerlist.append(playerdata)
+        self.spike_info = self.Spike(json_data, players)
+        self.player_stats = PlayerStats(json_data["playerStats"], players)
 
-        class RoundPlayer:
-            def __init__(self, mdict):
-                self.raw = mdict
-                self.id = mdict["puuid"]
-                self.damagelist = []
-                self.killist = []
-                for damage in mdict["damage"]:
-                    damagedata = self.DamageEvent(damage)
-                    self.damagelist.append(damagedata)
-                for kill in mdict["kills"]:
-                    killdata = self.KillEvent(kill)
-                    self.killist.append(killdata)
-                self.ecospent = mdict["economy"]["spent"]
-                self.ecoremaining = mdict["economy"]["remaining"]
-                self.ecosteal = mdict["economy"]["loadoutValue"]
-                self.weapon = self.Weapon(mdict["economy"])
-                self.armor = self.Armor(mdict["economy"])
-                self.ability = self.Ability(mdict["ability"])
+        self.result_code = json_data["roundResultCode"]
 
-            class Ability:
-                def __init__(self, mdict):
-                    self.raw = mdict
-                    try:
-                        self.c_casts = mdict["c_casts"]
-                    except:
-                        self.c_casts = 0
-                    try:
-                        self.q_casts = mdict["q_casts"]
-                    except:
-                        self.q_casts = 0
-                    try:
-                        self.e_casts = mdict["e_cast"]
-                    except:
-                        self.e_casts = 0
-                    try:
-                        self.ultimate_casts = mdict["x_cast"]
-                    except:
-                        self.ultimate_casts = 0
-                    try:
-                        self.x_casts = mdict["x_cast"]
-                    except:
-                        self.x_casts = 0
+    class Spike:
+        def __init__(self, json_data, players: Players):
+            self.planter = players.get_player_by_id(json_data["bombPlanter"])
+            if self.planter:
+                self.site = json_data["plantSite"]
 
-            class Armor:
-                def __init__(self, mdict):
-                    self.raw = mdict
-                    self.id = mdict["armor"]
-                    self.name = ValorantAPI().get_armor_name(self.id)
-                    # self.name = mdict["name"]
+                self.plant_time = json_data["plantRoundTime"]
+                self.plant_location = Coordinate(json_data["plantLocation"])
 
-            class Weapon:
-                def __init__(self, mdict):
-                    self.raw = mdict
-                    self.id = mdict["weapon"]
-                    self.name = ValorantAPI().get_weapon_name(self.id)
-                    # self.name = mdict["name"]
-
-            class DamageEvent:
-                def __init__(self, mdict):
-                    self.raw = mdict
-                    self.id = mdict["receiver"]
-                    # self.display_name = mdict["receiver_display_name"]
-                    # self.team = mdict["receiver_team"]
-                    self.damage = mdict["damage"]
-                    self.headshots = mdict["headshots"]
-                    self.bodyshots = mdict["bodyshots"]
-                    self.legshots = mdict["legshots"]
-
-            class KillEvent:
-                def __init__(self, mdict):
-                    self.raw = mdict
-                    self.kill_time_in_round = mdict["timeSinceRoundStartMillis"]
-                    self.kill_time_in_match = mdict["timeSinceGameStartMillis"]
-                    self.killer = self.Killer(mdict)
-                    self.victim = self.Victim(mdict)
-                    self.assistantlist = mdict["assistants"]
-
-                class Killer:
-                    def __init__(self, mdict):
-                        self.raw = mdict
-                        self.id = mdict["killer"]
-                        # self.display_name = mdict["killer_display_name"]
-
-                class Victim:
-                    def __init__(self, mdict):
-                        self.raw = mdict
-                        self.id = mdict["victim"]
-                        # self.display_name = mdict["victim_display_name"]
-                        self.death_location = self.DeathLocation(
-                            mdict["victimLocation"]
-                        )
-                        self.weapon = self.Weapon(mdict)
-
-                    class DeathLocation:
-                        def __init__(self, mdict):
-                            self.raw = mdict
-                            self.x = mdict["x"]
-                            self.y = mdict["y"]
-
-                    class Weapon:
-                        def __init__(self, mdict):
-                            self.raw = mdict
-                            self.type = mdict["finishingDamage"]["damageType"]
-                            self.id = mdict["finishingDamage"]["damageItem"]
-                            self.secondary_fire_mode = mdict["finishingDamage"][
-                                "isSecondaryFireMode"
-                            ]
-
-    class WinnerTeam:
-        def __init__(self, mdict):
-            self.raw = mdict
-            self.raw_name = mdict["winningTeam"]
-            self.name = FormatData().format_team(mdict["winningTeam"])
-            self.reason = mdict["roundResult"].lower()
-
-    class SpikeInfo:
-        def __init__(self, mdict):
-            self.raw = mdict
-            self.planted = mdict["bombPlanter"] is not None
-            self.defused = mdict["bombDefuser"] is not None
-            try:
-                self.x = mdict["plantLocation"]["x"]
-                self.y = mdict["plantLocation"]["y"]
-            except:
-                pass
-            try:
-                self.plant = self.PlantInfo(mdict)
-            except:
-                pass
-            try:
-                self.defuse = self.DefuseInfo(mdict)
-            except:
-                pass
-
-        class PlantInfo:
-            def __init__(self, mdict):
-                self.id = mdict["bombPlanter"]
-                # To be implemented yet #Name of the planter
-                self.site = mdict["plantSite"]
-                formatobj = FormatData().PlantTime()
-                formatobj.format_time_ms(mdict)
-                self.time = formatobj.display_time
-
-        class DefuseInfo:
-            def __init__(self, mdict):
-                self.id = mdict["bombDefuser"]
-                self.site = mdict["plantSite"]
-                formatobj = FormatData().DefuseTime()
-                formatobj.format_time_ms(mdict)
-                self.time = formatobj.display_time
-
-
-class FormatData:
-    class DefuseTime:
-        def format_time_ms(self, mdict: dict):
-            self.ms = mdict["defuseRoundTime"]
-            self.total_s = mdict["defuseRoundTime"] // 1000
-            self.m = mdict["defuseRoundTime"] // 1000
-            self.s = self.total_s - (60 * self.m)
-            self.display_time = f"{self.m}:{self.s}"
-
-    class PlantTime:
-        def format_time_ms(self, mdict: dict):
-            self.ms = mdict["plantRoundTime"]
-            self.total_s = mdict["plantRoundTime"] // 1000
-            self.m = mdict["plantRoundTime"] // 1000
-            self.s = self.total_s - (60 * self.m)
-            self.display_time = f"{self.m}:{self.s}"
-
-    def format_team(self, team: str) -> str:
-        if team == "Blue":
-            return "Defenders"
-        elif team == "Red":
-            return "Attackers"
-        else:
-            return "NA"
-
-    def format_side(self, team: str) -> str:
-        if team == "Blue":
-            return "Defending"
-        elif team == "Red":
-            return "Attacking"
-        else:
-            return "NA"
-
-    def get_rounds_won(self, rounds: list[Round]) -> str:
-        attcount = 0
-        defcount = 0
-        for round in rounds:
-            if round.winnerteam.name == "Defenders":
-                defcount += 1
-            elif round.winnerteam.name == "Attackers":
-                attcount += 1
-        if defcount == attcount:
-            return "Tie!"
-        return (
-            f"Defenders - {defcount}"
-            if defcount > attcount
-            else f"Attackers - {attcount}"
-        )
-
-    def get_rounds_stats(self, rounds: Rounds) -> str:
-        attcount = 0
-        defcount = 0
-        for round in rounds:
-            if round.winnerteam.name == "Defenders":
-                defcount += 1
-            elif round.winnerteam.name == "Attackers":
-                attcount += 1
-        return f"{defcount} Defenders/{attcount} Attackers"
-
-    def get_player_side(self, currentplayerid: str, mdict: dict) -> str:
-        players = mdict["players"]["all_players"]
-        for player in players:
-            playerdata = Player(player)
-            playerteam = playerdata.team_id
-            if playerdata.id == currentplayerid:
-                return playerteam
-        return None
-
-    def check_match_won(self, currentplayerid: str, mdict: dict) -> str:
-        rounds = mdict["rounds"]
-        currentplayerside = self.get_player_side(currentplayerid, mdict)
-        currentrounds = 0
-        enemyrounds = 0
-        for round in rounds:
-            rounddata = Round(round)
-            if rounddata.winnerteam == currentplayerside:
-                currentrounds += 1
-            else:
-                enemyrounds += 1
-        if currentrounds > enemyrounds:
-            return "Won"
-        elif enemyrounds > currentrounds:
-            return "Lost"
-        else:
-            return "Tie"
-
-    def get_average_kda(self, matches: Matches, currentplayerid: str) -> float:
-        totalkills = 0
-        totaldeaths = 0
-        totalassists = 0
-        for match in matches:
-            if match.mode == "Deathmatch":
-                continue
-            if match.mode == "Escalation":
-                continue
-            if match.mode == "Replication":
-                continue
-            for player in match.players.playerlist:
-                kills = player.stats.kills
-                deaths = player.stats.deaths
-                assists = player.stats.assists
-                if player.id == currentplayerid:
-                    totalkills += kills
-                    totaldeaths += deaths
-                    totalassists += assists
-        if totaldeaths == 0:
-            totaldeaths = 1
-        return (totalkills + (0.5 * totalassists)) / totaldeaths
-
-    def get_average_econ(self, matches: Matches, currentplayerid: str) -> int:
-        totaleco = 0
-        matchcount = 0
-        for match in matches:
-            if match.mode == "Spike Rush":
-                continue
-            if match.mode == "Deathmatch":
-                continue
-            if match.mode == "Escalation":
-                continue
-            if match.mode == "Replication":
-                continue
-            pass
-        if matchcount == 0:
-            matchcount = 1
-        return totaleco / matchcount
-
-    def get_freq_weapon(self, matches: Matches, currentplayerid: str) -> list:
-        weaponsused = {"data": []}
-
-        def get_duplicate_json(origjson, key):
-            for data in origjson["data"]:
-                if data["name"] == key:
-                    return data
-            return {}
-
-        def merge_dicts(*dicts):
-            d = {}
-            for dict in dicts:
-                for key in dict:
-                    try:
-                        if key == "uses":
-                            d[key] += dict[key]
-                        else:
-                            d[key] = dict[key]
-                    except KeyError:
-                        d[key] = dict[key]
-                    except TypeError:
-                        pass
-            return d
-
-        def remove_duplicate_json(origjson, key):
-            ad = {"data": []}
-            for data in origjson["data"]:
-                if data["name"] != key:
-                    ad["data"].append(data)
-            return ad
-
-        for match in matches:
-            if match.mode == "Deathmatch":
-                continue
-            if match.mode == "Escalation":
-                continue
-            if match.mode == "Replication":
-                continue
-            for round in match.rounds.roundlist:
-                for rplayer in round.stats.playerlist:
-                    if rplayer.id == currentplayerid:
-                        currentdata = {"name": rplayer.weapon.name, "uses": 1}
-                        if rplayer.weapon is None:
-                            continue
-                        dupdict = get_duplicate_json(weaponsused, currentdata["name"])
-                        weaponsused = remove_duplicate_json(
-                            weaponsused, currentdata["name"]
-                        )
-                        weaponsused["data"].append(merge_dicts(dupdict, currentdata))
-        return sorted(weaponsused["data"], key=lambda x: x["uses"], reverse=True)
-
-    def get_most_kills_weapon(self, matches, currentplayerid):
-        weaponsused = {"data": []}
-
-        def get_duplicate_json(origjson, key):
-            for data in origjson["data"]:
-                if data["name"] == key:
-                    return data
-            return {}
-
-        def merge_dicts(*dicts):
-            d = {}
-            for dict in dicts:
-                for key in dict:
-                    try:
-                        if key == "kills":
-                            d[key] += dict[key]
-                        else:
-                            d[key] = dict[key]
-                    except KeyError:
-                        d[key] = dict[key]
-                    except TypeError:
-                        pass
-            return d
-
-        def remove_duplicate_json(origjson, key):
-            ad = {"data": []}
-            for data in origjson["data"]:
-                if data["name"] != key:
-                    ad["data"].append(data)
-            return ad
-
-        for match in matches:
-            if match.mode == "Deathmatch":
-                continue
-            if match.mode == "Escalation":
-                continue
-            if match.mode == "Replication":
-                continue
-            for round in match.rounds.roundlist:
-                for rplayer in round.stats.playerlist:
-                    if rplayer.id == currentplayerid:
-                        currentdata = {
-                            "name": rplayer.weapon.name,
-                            "kills": len(rplayer.killist),
-                        }
-                        if rplayer.weapon is None or str(rplayer.weapon.name) == "None":
-                            continue
-                        dupdict = get_duplicate_json(weaponsused, currentdata["name"])
-                        weaponsused = remove_duplicate_json(
-                            weaponsused, currentdata["name"]
-                        )
-                        weaponsused["data"].append(merge_dicts(dupdict, currentdata))
-        return sorted(weaponsused["data"], key=lambda x: x["kills"], reverse=True)
-
-    def get_round_losing_reason(self, matches, currentplayerid):
-        roundlosingreasons = {"data": []}
-
-        def get_duplicate_json(origjson, key):
-            for data in origjson["data"]:
-                if data["name"] == key:
-                    return data
-            return {}
-
-        def merge_dicts(*dicts):
-            d = {}
-            for dict in dicts:
-                for key in dict:
-                    try:
-                        if key == "uses":
-                            d[key] += dict[key]
-                        else:
-                            d[key] = dict[key]
-                    except KeyError:
-                        d[key] = dict[key]
-                    except TypeError:
-                        pass
-            return d
-
-        def remove_duplicate_json(origjson, key):
-            ad = {"data": []}
-            for data in origjson["data"]:
-                if data["name"] != key:
-                    ad["data"].append(data)
-            return ad
-
-        for match in matches:
-            if match.mode == "Deathmatch":
-                continue
-            if match.mode == "Escalation":
-                continue
-            if match.mode == "Replication":
-                continue
-            currentplayerteam = "None"
-            for playerdata in match.players.playerlist:
-                playerteam = playerdata.team_id
-                if playerdata.id == currentplayerid:
-                    currentplayerteam = playerteam
-                    break
-            for round in match.rounds.roundlist:
-                if round.winnerteam.raw_name != currentplayerteam:
-                    roundlosingreason = round.winnerteam.reason
-                    currentdata = {"name": roundlosingreason, "uses": 1}
-                    dupdict = get_duplicate_json(
-                        roundlosingreasons, currentdata["name"]
-                    )
-                    roundlosingreasons = remove_duplicate_json(
-                        roundlosingreasons, currentdata["name"]
-                    )
-                    roundlosingreasons["data"].append(merge_dicts(dupdict, currentdata))
-            return sorted(
-                roundlosingreasons["data"], key=lambda x: x["uses"], reverse=True
-            )
-
-    def get_player_kills(self, stats, currentplayerid):
-        killist = []
-        for rplayer in stats.playerlist:
-            for kill in rplayer.killist:
-                puuid = kill.killer.id
-                if puuid == currentplayerid:
-                    killist.append(kill)
-        return killist
-
-    def get_player_death(self, stats, currentplayerid):
-        for rplayer in stats.playerlist:
-            for kill in rplayer.killist:
-                puuid = kill.victim.id
-                if puuid == currentplayerid:
-                    return kill
-        return None
-
-    def get_team_kills(self, stats, currentplayerid):
-        currentplayerteam = None
-        for rplayer in stats.playerlist:
-            if rplayer.id == currentplayerid:
-                currentplayerteam = rplayer.team
-        teamids = []
-        for rplayer in stats.playerlist:
-            if rplayer.team != currentplayerteam:
-                continue
-            for kill in rplayer.killist:
-                if not kill.killer.id in teamids:
-                    teamids.append(kill.killer.id)
-        killist = []
-        for puid in teamids:
-            playerkills = self.get_player_kills(stats, puid)
-            killist.append(playerkills[-1])
-        return killist
+            self.defuser = players.get_player_by_id(json_data["bombDefuser"])
+            if self.defuser:
+                self.defuse_time = json_data["defuseRoundTime"]
+                self.defuse_location = Coordinate(json_data["defuseLocation"])

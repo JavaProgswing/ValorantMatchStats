@@ -128,6 +128,50 @@ async def getAccountPUUIDName(puuid):
     return None
 
 
+class PlayerOverallStats:
+    def __init__(self):
+        self.score = 0
+        self.kills = 0
+        self.deaths = 0
+        self.assists = 0
+        self.KD = 0
+
+        self.damage = 0
+        self.average_damage = 0
+
+        self.headshots = 0
+        self.bodyshots = 0
+        self.legshots = 0
+        self.HS = 0
+
+        self.rounds_played = 0
+
+    def updateKDA(self, overall_stats):
+        self.score = overall_stats.score
+        self.kills = overall_stats.kills
+        self.deaths = overall_stats.deaths
+        self.assists = overall_stats.assists
+        self.KD = self.kills / max(self.deaths, 1)
+
+    def updateDamage(self, damage):
+        self.damage += damage
+        self.rounds_played += 1
+        self.average_damage = self.damage / self.rounds_played
+
+    def updateShots(self, damaged_players):
+        for player in damaged_players:
+            self.headshots += player.headshots
+            self.bodyshots += player.bodyshots
+            self.legshots += player.legshots
+        self.HS = (
+            self.headshots / max(self.headshots + self.bodyshots + self.legshots, 1)
+        ) * 100.0
+
+
+def ordinal(n: int):
+    return "%d%s" % (n, "tsnrhtdd"[(n // 10 % 10 != 1) * (n % 10 < 4) * n % 10 :: 4])
+
+
 @app.route("/")
 async def home_or_stats():
     if session.get("logged_in"):
@@ -151,12 +195,29 @@ async def home_or_stats():
                 continue
             if match_count >= MAX_MATCHES:
                 break
-            match_summaries.append(pickle.loads(match_data["data"]))
+            current_match = pickle.loads(match_data["data"])
+            current_stats = PlayerOverallStats()
+            current_player = current_match.players.get_player_by_id(puuid)
+            current_stats.updateKDA(current_player.overall_stats)
+            for round in current_match.rounds:
+                current_round_player = round.player_stats.get_player_by_id(puuid)
+                current_stats.updateShots(current_round_player.damaged_players)
+                current_stats.updateDamage(
+                    current_round_player.damaged_players.total_damage
+                )
+            current_stats.leaderboard_position = (
+                current_match.players.players.index(current_player) + 1
+            )
+            current_stats.ability_stats = current_player.ability_stats
+
+            current_match.overall_stats = current_stats
+            match_summaries.append(current_match)
             match_count += 1
 
         return await render_template(
             "stats.html",
             matches=match_summaries,
+            ordinal=ordinal,
             username=await getAccountPUUIDName(puuid),
         )
     else:

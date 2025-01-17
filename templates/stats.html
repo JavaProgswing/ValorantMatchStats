@@ -17,22 +17,21 @@
             {% if matches and matches|length > 0 %}
                 <div class="cards-container">
                     {% for match in matches %}
-                        <div class="card" style="background-image: url('{{ match.thumbnail }}')" onclick="toggleDetails(this)">
+                        <div class="card" style="background-image: url('{{ match.map.splash }}')" onclick="toggleDetails(this)">
                             <div class="card-overlay">
-                                <h3>{{ match.mode }}</h3>
+                                <h3>{{ match.mode }} on {{ match.start_time.strftime('%d/%m/%Y %H:%M') }}</h3>
                                 <p class="stats-summary">
-                                    {{ match.winningteam }} <br>
-                                    K/D: {{ match.player.stats.kills }}/{{ match.player.stats.deaths }} <br>
-                                    HS%: {{ match.hs_percentage }}% <br>
-                                    Leaderboard: {{ match.position }}
+                                    {{ match.winner.name }} <br>
+                                    K/D: {{ match.overall_stats.kills }}/{{ match.overall_stats.deaths }} <br>
+                                    HS%: {{ "%.2f"|format(match.overall_stats.HS) }}% <br>
+                                    Leaderboard: {{ ordinal(match.overall_stats.leaderboard_position) }}
                                 </p>
                             </div>
                             <div class="card-details">
                                 <p class="stats-expanded">
-                                    Rounds Played: {{ len(match.rounds.roundlist) }} <br>
-                                    Score: {{ match.score }} <br>
-                                    MVPs: {{ match.mvps }} <br>
-                                    Abilities Cast: {{ match.abilities_cast }}
+                                    Rounds Played: {{ match.rounds.rounds|length }} <br>
+                                    Score: {{ match.overall_stats.score }} <br>
+                                    Abilities Cast: {{ match.overall_stats.ability_stats }}
                                 </p>
                             </div>
                         </div>
