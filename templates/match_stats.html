@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Match Details</title>
+    <link rel="stylesheet" href="/static/styles.css?v=4" />
+  </head>
+  <body>
+    <header>
+      <h1>Match Details</h1>
+      <a href="/">Back to Overview</a>
+    </header>
+    <main>
+      <section>
+        <h2>{{ match.mode }} on {{ match.map.name }}</h2>
+        <p>Start Time: {{ match.start_time.strftime('%d/%m/%Y %H:%M') }}</p>
+        <p>End Time: {{ match.end_time.strftime('%d/%m/%Y %H:%M') }}</p>
+        <p>Winner: {{ match.winner.name }}</p>
+      </section>
+
+      <section>
+        <h3>Your Performance</h3>
+        <ul>
+          <li>Kills: {{ overall_stats.kills }}</li>
+          <li>Deaths: {{ overall_stats.deaths }}</li>
+          <li>Assists: {{ overall_stats.assists }}</li>
+          <li>K/D Ratio: {{ "%.2f"|format(overall_stats.KD) }}</li>
+          <li>Total Damage: {{ overall_stats.damage }}</li>
+          <li>
+            Average Damage/Round: {{ "%.2f"|format(overall_stats.average_damage)
+            }}
+          </li>
+          <li>Headshot %: {{ "%.2f"|format(overall_stats.HS) }}%</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>Player Statistics</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Team</th>
+              <th>Kills</th>
+              <th>Deaths</th>
+              <th>Assists</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for player in match.players %}
+            <tr>
+              <td>{{ player.display_name }}</td>
+              <td>{{ player.team.name }}</td>
+              <td>{{ player.overall_stats.kills }}</td>
+              <td>{{ player.overall_stats.deaths }}</td>
+              <td>{{ player.overall_stats.assists }}</td>
+              <td>{{ player.overall_stats.score }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h3>Rounds Overview</h3>
+        {% for round in match.rounds %}
+        <div>
+          <h4>{{ round.winner.name }}/Round {{ round.serial+1 }}</h4>
+          <p>Spike planted at {{ round.spike_info.site or 'N/A' }}</p>
+          <p>Round ended by {{round.result_code}}</p>
+        </div>
+        {% endfor %}
+      </section>
+    </main>
+    <footer>
+      <p>&copy; 2025 Valorant Tracker</p>
+    </footer>
+  </body>
+</html>

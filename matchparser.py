@@ -47,12 +47,8 @@ class ValorantAPI:
         return None
 
     def get_formatted_team_name(self, team_id):
-        team_names = {
-            "Red": "Attackers",
-            "Blue": "Defenders",
-            "FreeForAll": "Free For All",
-        }
-        return team_names.get(team_id, "Unknown")
+        team_names = {"Red": "Attackers", "Blue": "Defenders"}
+        return team_names.get(team_id, "Free For All")
 
     def get_formatted_queue_name(self, queue_id):
         queue_names = {
@@ -82,6 +78,23 @@ class ValorantAPI:
             if i["uuid"] == agent_id:
                 return Agent(i)
         return None
+
+    def get_competitive_tier(self, tier_id):
+        json_data = self.fetch_data("competitivetiers")
+        for i in json_data["data"][-1]["tiers"]:
+            if i["tier"] == tier_id:
+                return CompetitiveTier(i)
+        return None
+
+
+class CompetitiveTier:
+    def __init__(self, json_data):
+        self.tier = json_data["tier"]
+        self.rank = json_data["divisionName"]
+        self.full_rank = json_data["tierName"]
+
+        self.small_icon = json_data["smallIcon"]
+        self.large_icon = json_data["largeIcon"]
 
 
 class Agent:
@@ -263,7 +276,8 @@ class Player:
         self.level = json_data["accountLevel"]
 
         self.party_id = json_data.get("partyId")
-        self.tier = json_data.get("competitiveTier")
+        self.tier_id = json_data.get("competitiveTier")
+        self.tier = ValorantAPI().get_competitive_tier(self.tier_id)
 
         self.is_observer = json_data.get("isObserver")
         self.team_id = json_data.get("teamId")

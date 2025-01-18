@@ -1,126 +1,150 @@
 body {
-    font-family: 'Arial', sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #1a1a2e;
-    color: #ffffff;
+  font-family: "Arial", sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #1a1a2e;
+  color: #ffffff;
 }
 
 header {
-    background-color: #162447;
-    color: #ffffff;
-    padding: 20px;
-    text-align: center;
+  background-color: #162447;
+  color: #ffffff;
+  padding: 20px;
+  text-align: center;
 }
 
 header h1 {
-    margin: 0;
-    font-size: 2.5em;
+  margin: 0;
+  font-size: 2.5em;
+}
+
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header-section h2 {
+  margin: 0;
+}
+
+.header-section form {
+  margin: 0;
 }
 
 main {
-    padding: 20px;
+  padding: 20px;
 }
 
 section h2 {
-    font-size: 1.8em;
-    color: #e94560;
+  font-size: 1.8em;
+  color: #e94560;
 }
 
 section p {
-    font-size: 1.1em;
-    margin-bottom: 20px;
+  font-size: 1.1em;
+  margin-bottom: 20px;
 }
 
 .cards-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
 }
 
 .card {
-    width: 300px;
-    height: 200px;
-    position: relative;
-    background-size: cover;
-    background-position: center;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
-    cursor: pointer;
-    transition: transform 0.3s, box-shadow 0.3s;
+  width: 300px;
+  height: 200px;
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card.lost {
+  border: 3px solid red;
+}
+
+.card.won {
+  border: 3px solid green;
 }
 
 .card:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6);
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6);
 }
 
 .card-overlay {
-    background-color: rgba(0, 0, 0, 0.6);
-    padding: 15px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    color: white;
-    text-shadow: 1px 1px 3px black;
-    border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 15px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: white;
+  text-shadow: 1px 1px 3px black;
+  border-radius: 10px;
 }
 
 .card-details {
-    display: none;
-    background-color: rgba(0, 0, 0, 0.8);
-    color: #ffffff;
-    padding: 15px;
-    border-radius: 10px;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    transition: opacity 0.3s;
+  display: none;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #ffffff;
+  padding: 15px;
+  border-radius: 10px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  transition: opacity 0.3s;
 }
 
 .card-details.active {
-    display: block;
+  display: block;
 }
 
 table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
 }
 
-table th, table td {
-    border: 1px solid #ccc;
-    padding: 8px;
-    text-align: left;
+table th,
+table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
 }
 
 table th {
-    background-color: #162447;
-    color: #ffffff;
+  background-color: #162447;
+  color: #ffffff;
 }
 
 button {
-    background-color: #e94560;
-    border: none;
-    padding: 10px 20px;
-    color: white;
-    font-size: 1em;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
+  background-color: #e94560;
+  border: none;
+  padding: 10px 20px;
+  color: white;
+  font-size: 1em;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
 }
 
 button:hover {
-    background-color: #d7263d;
+  background-color: #d7263d;
 }
 
 footer {
-    text-align: center;
-    padding: 10px 0;
-    background-color: #162447;
-    color: #ffffff;
+  text-align: center;
+  padding: 10px 0;
+  background-color: #162447;
+  color: #ffffff;
 }

@@ -198,6 +198,8 @@ async def home_or_stats():
             current_match = pickle.loads(match_data["data"])
             current_stats = PlayerOverallStats()
             current_player = current_match.players.get_player_by_id(puuid)
+            current_stats.result = current_player.team.won
+
             current_stats.updateKDA(current_player.overall_stats)
             for round in current_match.rounds:
                 current_round_player = round.player_stats.get_player_by_id(puuid)
@@ -222,6 +224,39 @@ async def home_or_stats():
         )
     else:
         return await render_template("index.html")
+
+
+@app.route("/matches/<match_id>")
+async def match_details(match_id):
+    if not session.get("logged_in") or not match_id:
+        return redirect("/")
+
+    puuid = session.get("puuid")
+    async with pool.acquire() as con:
+        match_data = await con.fetchrow(
+            "SELECT data FROM valorantmatches WHERE id = $1", match_id
+        )
+
+    if match_data is None:
+        return redirect("/")
+
+    current_match = pickle.loads(match_data["data"])
+    current_player = current_match.players.get_player_by_id(puuid)
+
+    overall_stats = PlayerOverallStats()
+    overall_stats.updateKDA(current_player.overall_stats)
+    for round in current_match.rounds:
+        round_player = round.player_stats.get_player_by_id(puuid)
+        if round_player:
+            overall_stats.updateShots(round_player.damaged_players)
+            overall_stats.updateDamage(round_player.damaged_players.total_damage)
+
+    return await render_template(
+        "match_stats.html",
+        match=current_match,
+        current_player=current_player,
+        overall_stats=overall_stats,
+    )
 
 
 @app.route("/privacyPolicy")

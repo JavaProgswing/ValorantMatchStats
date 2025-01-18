@@ -1,59 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>User Stats</title>
-    <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
+    <link rel="stylesheet" href="/static/styles.css?v=4" />
+  </head>
+  <body>
     <header>
-        <h1>Valorant Match Stats</h1>
+      <h1>Valorant Match Stats</h1>
     </header>
     <main>
-        <section>
-            <h2>Welcome, {{ username }}</h2>
-            <p>Your recent matches:</p>
-            {% if matches and matches|length > 0 %}
-                <div class="cards-container">
-                    {% for match in matches %}
-                        <div class="card" style="background-image: url('{{ match.map.splash }}')" onclick="toggleDetails(this)">
-                            <div class="card-overlay">
-                                <h3>{{ match.mode }} on {{ match.start_time.strftime('%d/%m/%Y %H:%M') }}</h3>
-                                <p class="stats-summary">
-                                    {{ match.winner.name }} <br>
-                                    K/D: {{ match.overall_stats.kills }}/{{ match.overall_stats.deaths }} <br>
-                                    HS%: {{ "%.2f"|format(match.overall_stats.HS) }}% <br>
-                                    Leaderboard: {{ ordinal(match.overall_stats.leaderboard_position) }}
-                                </p>
-                            </div>
-                            <div class="card-details">
-                                <p class="stats-expanded">
-                                    Rounds Played: {{ match.rounds.rounds|length }} <br>
-                                    Score: {{ match.overall_stats.score }} <br>
-                                    Abilities Cast: {{ match.overall_stats.ability_stats }}
-                                </p>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p>No matches found!</p>
-            {% endif %}
-        </section>
-        
+      <section class="header-section">
+        <h2>Welcome {{ username }}</h2>
         <form action="/logout" method="get">
-            <button type="submit">Logout</button>
+          <button type="submit">Logout</button>
         </form>
+      </section>
+      <section>
+        {% if matches and matches|length > 0 %}
+        <div class="cards-container">
+          {% for match in matches %}
+          <div
+            id="{{ match.id }}"
+            class="card {% if match.overall_stats.result %}won{% else %}lost{% endif %}"
+            style="background-image: url('{{ match.map.splash }}')"
+            onclick="toggleDetails(this)"
+          >
+            <div class="card-overlay">
+              <h3>
+                {{ match.winner.name }}/{{ match.mode }} <br />
+                {{ match.start_time.strftime('%d/%m/%Y %H:%M') }}
+              </h3>
+              <p class="stats-summary">
+                <br />
+                Position: {{ ordinal(match.overall_stats.leaderboard_position)
+                }}
+                <br />
+                K/D/A: {{ match.overall_stats.kills }}/{{
+                match.overall_stats.deaths }}/{{ match.overall_stats.assists }}
+                <br />
+                HS%: {{ "%.2f"|format(match.overall_stats.HS) }}% <br />
+              </p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p>No matches found!</p>
+        {% endif %}
+      </section>
     </main>
     <footer>
-        <p>&copy; 2025 Valorant Tracker</p>
+      <p>&copy; 2025 Valorant Tracker</p>
     </footer>
     <script>
-        function toggleDetails(card) {
-            const details = card.querySelector('.card-details');
-            details.classList.toggle('active');
-        }
+      function toggleDetails(card) {
+        window.location.href = `/matches/${card.id}`;
+      }
     </script>
-</body>
+  </body>
 </html>
